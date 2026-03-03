@@ -157,7 +157,7 @@ Swagger: `http://localhost:3000/docs`
 
 ## Макеты
 
-https://www.figma.com/proto/MWzwhWlmvwcERmVYQScH1C/Quiz-room?node-id=1-2&t=DzgFHLFeswYy9GyB-1
+https://www.figma.com/proto/MWzwhWlmvwcERmVYQScH1C/Quiz-room?node-id=10-4&t=dgoLCDhUPCAQQnEM-1
 
 ## License
 
