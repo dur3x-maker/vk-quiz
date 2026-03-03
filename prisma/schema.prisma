@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ORGANIZER
+  PARTICIPANT
+}
+
+enum RoomPhase {
+  LOBBY
+  PREPARING
+  QUESTION
+  RESULT
+  FINISHED
+}
+
+enum QuestionType {
+  TEXT
+  IMAGE
+}
+
+enum AnswerMode {
+  SINGLE
+  MULTI
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  role         Role
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  refreshTokens    RefreshToken[]
+  ownedQuizzes     Quiz[]
+  roomsOrganized   Room[]              @relation("RoomOrganizer")
+  roomParticipants RoomParticipant[]
+  answers          Answer[]
+  scoreSnapshots   ScoreSnapshot[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Quiz {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner  User    @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  rounds Round[]
+  rooms  Room[]
+
+  @@index([ownerId])
+  @@map("quizzes")
+}
+
+model Round {
+  id        String   @id @default(uuid())
+  quizId    String
+  title     String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quiz      Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@index([quizId])
+  @@map("rounds")
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  roundId       String
+  type          QuestionType
+  answerMode    AnswerMode
+  text          String
+  imageUrl      String?
+  timerSeconds  Int
+  points        Int
+  order         Int
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  round   Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  options Option[]
+  answers Answer[]
+
+  @@index([roundId])
+  @@map("questions")
+}
+
+model Option {
+  id         String   @id @default(uuid())
+  questionId String
+  text       String
+  isCorrect  Boolean
+  order      Int
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("options")
+}
+
+model Room {
+  id           String     @id @default(uuid())
+  code         String     @unique
+  organizerId  String
+  quizId       String
+  phase             RoomPhase @default(LOBBY)
+  createdAt         DateTime  @default(now())
+  startedAt         DateTime?
+  endedAt           DateTime?
+  currentRoundIndex    Int    @default(0)
+  currentQuestionIndex Int    @default(0)
+
+  organizer        User              @relation("RoomOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+  quiz             Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  participants     RoomParticipant[]
+  answers          Answer[]
+  scoreSnapshots   ScoreSnapshot[]
+
+  @@index([organizerId])
+  @@index([quizId])
+  @@index([code])
+  @@map("rooms")
+}
+
+model RoomParticipant {
+  id           String   @id @default(uuid())
+  roomId       String
+  userId       String
+  joinedAt     DateTime @default(now())
+  isOrganizer  Boolean  @default(false)
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId], name: "RoomParticipant_roomId_userId")
+  @@index([roomId])
+  @@index([userId])
+  @@map("room_participants")
+}
+
+model Answer {
+  id                String   @id @default(uuid())
+  roomId            String
+  questionId        String
+  userId            String
+  selectedOptionIds String[]
+  isCorrect         Boolean
+  pointsAwarded     Int
+  answeredAt        DateTime @default(now())
+  answerTimeMs      Int
+
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, questionId, userId], name: "Answer_roomId_questionId_userId")
+  @@index([roomId])
+  @@index([questionId])
+  @@index([userId])
+  @@map("answers")
+}
+
+model ScoreSnapshot {
+  id          String   @id @default(uuid())
+  roomId      String
+  userId      String
+  totalPoints Int
+  updatedAt   DateTime @updatedAt
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId], name: "ScoreSnapshot_roomId_userId")
+  @@index([roomId])
+  @@index([userId])
+  @@map("score_snapshots")
+}
