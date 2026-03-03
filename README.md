@@ -63,7 +63,7 @@ root/
 npm install
 cp .env.example .env        # настроить переменные
 npx prisma migrate dev
-npm run start:dev            # http://localhost:3000
+npm run start:dev            # http://localhost:3001
 ```
 
 ### Frontend
@@ -71,7 +71,7 @@ npm run start:dev            # http://localhost:3000
 ```bash
 cd apps/frontend
 npm install
-npm run dev                  # http://localhost:3001
+npm run dev                  # http://localhost:3000
 ```
 
 ## Переменные окружения
@@ -84,7 +84,7 @@ JWT_ACCESS_SECRET=your-access-secret
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_SECRET=your-refresh-secret
 JWT_REFRESH_EXPIRES_IN=7d
-CORS_ORIGIN=http://localhost:3001
+CORS_ORIGIN=http://localhost:3000
 ```
 
 ### Frontend (`apps/frontend/.env.local`)
